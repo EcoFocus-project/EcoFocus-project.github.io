@@ -1,0 +1,35 @@
+@import url('https://fonts.googleapis.com/css2?family=Ysabeau+SC:wght@1..1000&display=swap');
+
+* {
+  box-sizing: border-box;
+}
+
+
+html,
+body,
+#app {
+  margin: 0;
+  width: 100%;
+  min-height: 100%;
+  font-family: "Ysabeau SC", sans-serif;
+  font-optical-sizing: auto;
+}
+
+body,
+input,
+button,
+textarea {
+  font-family: "Ysabeau SC", sans-serif;
+}
+
+:root {
+  --color-darkest: #051f20;
+  --color-dark: #0b2b26;
+  --color-deep: #163832;
+  --color-main: #235347;
+  --color-soft: #8eb69b;
+  --color-light: #daf1de;
+  --text-on-dark: #daf1de;
+  --text-on-light: #163832;
+  --background-gradient: linear-gradient(to bottom, #e3ef26, #076653, #0c342c)
+}

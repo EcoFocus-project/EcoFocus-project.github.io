@@ -94,6 +94,12 @@
     @confirm-deactivate="confirmDeactivate"
   />
 
+  <LevelView
+  v-if="currentScreen === 'level-one'"
+  @complete="onLevelComplete"
+  @go-home="goHome"
+  />
+
 </template>
 
 <script setup>
@@ -111,6 +117,7 @@ import RankModal from './components/RankModal.vue'
 import AccountSettingsView from './views/AccountSettingsView.vue'
 import EditProfileView from './views/EditProfileView.vue'
 import DeactiveModal from './components/DeactiveModal.vue'
+import LevelView from './views/LevelView.vue'
 
 
 const isRestrictedOpen = ref(false)

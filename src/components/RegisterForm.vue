@@ -1,7 +1,39 @@
 <template>
   <div class="modal-content">
     <h1 class="header">регистрация</h1>
-    <img :src="avatarImg" alt="аватар" class="avatar" />
+    
+    <!-- Выбор аватара - кнопка с текущим аватаром -->
+    <div class="avatar-selection">
+      <p class="placeholder-input">выберите аватар</p>
+      <button type="button" class="avatar-trigger" @click="openAvatarModal = true">
+        <span class="current-avatar">{{ currentAvatarEmoji }}</span>
+        <span class="avatar-select-text">выбрать аватар</span>
+        <span class="avatar-arrow">▼</span>
+      </button>
+    </div>
+
+    <!-- Всплывающее окно выбора аватара -->
+    <div v-if="openAvatarModal" class="avatar-modal-overlay" @click="closeAvatarModal">
+      <div class="avatar-modal" @click.stop>
+        <div class="avatar-modal-header">
+          <h3>выберите аватар</h3>
+          <button class="avatar-modal-close" @click="closeAvatarModal">✖</button>
+        </div>
+        <div class="avatars-grid">
+          <button
+            v-for="avatar in avatars"
+            :key="avatar.id"
+            type="button"
+            class="avatar-option"
+            :class="{ 'avatar-selected': selectedAvatar === avatar.id }"
+            @click="selectAvatar(avatar.id)"
+          >
+            <span class="avatar-emoji">{{ avatar.emoji }}</span>
+            <span class="avatar-name">{{ avatar.name }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
 
     <div class="sex-choice-block">
       <p class="placeholder-input">пол</p>
@@ -55,12 +87,39 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { ref } from 'vue'
-import avatarImg from '../assets/images/avatar.png'
 
 defineEmits(['switch-mode'])
 
 const showPassword = ref(false)
+const openAvatarModal = ref(false)
+const selectedAvatar = ref(1)
+
+const avatars = [
+  { id: 1, name: 'Космонавт', emoji: '👨‍🚀' },
+  { id: 2, name: 'Русалка', emoji: '🧜‍♀️' },
+  { id: 3, name: 'Дельфин', emoji: '🐬' },
+  { id: 4, name: 'Черепаха', emoji: '🐢' },
+  { id: 5, name: 'Осьминог', emoji: '🐙' },
+  { id: 6, name: 'Кит', emoji: '🐋' },
+  { id: 7, name: 'Морская звезда', emoji: '⭐' },
+  { id: 8, name: 'Рыбка', emoji: '🐠' }
+]
+
+const currentAvatarEmoji = computed(() => {
+  const avatar = avatars.find(a => a.id === selectedAvatar.value)
+  return avatar ? avatar.emoji : '👤'
+})
+
+const selectAvatar = (id) => {
+  selectedAvatar.value = id
+  openAvatarModal.value = false
+}
+
+const closeAvatarModal = () => {
+  openAvatarModal.value = false
+}
 </script>
 
 <style scoped>
@@ -80,21 +139,158 @@ const showPassword = ref(false)
   color: #fff;
   font-size: 42px;
   font-weight: 900;
-  margin: 0 0 10px 0;
+  margin: 0 0 5px 0;
   user-select: none;
 }
 
-.avatar {
-  height: auto;
-  width: 100px;
-  margin: 0 auto 15px;
-  display: block;
-  animation: gentleFloat 3s ease-in-out infinite;
+/* Кнопка выбора аватара */
+.avatar-selection {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
 }
 
-@keyframes gentleFloat {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-6px); }
+.avatar-trigger {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(50, 180, 144, 0.3);
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.avatar-trigger:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: #32b490;
+}
+
+.current-avatar {
+  font-size: 32px;
+}
+
+.avatar-select-text {
+  flex: 1;
+  text-align: left;
+  color: white;
+  font-size: 16px;
+}
+
+.avatar-arrow {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+  transition: transform 0.2s ease;
+}
+
+.avatar-trigger:hover .avatar-arrow {
+  transform: rotate(180deg);
+}
+
+/* Модальное окно выбора аватара */
+.avatar-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1100;
+}
+
+.avatar-modal {
+  background: linear-gradient(135deg, #046a4e, #014532);
+  border-radius: 24px;
+  padding: 20px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(50, 180, 144, 0.3);
+}
+
+.avatar-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.avatar-modal-header h3 {
+  color: white;
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.avatar-modal-close {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.avatar-modal-close:hover {
+  background: #32b490;
+  transform: rotate(90deg);
+}
+
+.avatars-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.avatar-option {
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(50, 180, 144, 0.3);
+  border-radius: 16px;
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.avatar-option:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  border-color: #55b49a;
+}
+
+.avatar-selected {
+  border-color: #32b490;
+  background: rgba(50, 180, 144, 0.2);
+  box-shadow: 0 0 0 2px rgba(50, 180, 144, 0.3);
+}
+
+.avatar-emoji {
+  font-size: 40px;
+}
+
+.avatar-name {
+  color: white;
+  font-size: 12px;
+  text-align: center;
 }
 
 .sex-choice-block {
@@ -320,7 +516,6 @@ const showPassword = ref(false)
 
 @media (max-width: 640px) {
   .header { font-size: 34px; }
-  .avatar { width: 80px; margin-bottom: 10px; }
   .placeholder-input { font-size: 14px; margin-bottom: 6px; }
   .modal-input { height: 44px; font-size: 15px; margin-bottom: 10px; }
   .password-wrapper .modal-input { margin-bottom: 10px; }
@@ -330,5 +525,22 @@ const showPassword = ref(false)
   .option-text { font-size: 14px; }
   .sex-options { gap: 15px; }
   .to-login, .switch-link { font-size: 13px; }
+  
+  .avatars-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  
+  .avatar-emoji {
+    font-size: 32px;
+  }
+  
+  .avatar-name {
+    font-size: 10px;
+  }
+  
+  .avatar-modal {
+    padding: 16px;
+  }
 }
 </style>

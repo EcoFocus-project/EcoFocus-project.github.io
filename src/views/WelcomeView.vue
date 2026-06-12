@@ -18,10 +18,16 @@
         <h1 class="title">добро пожаловать в ЭкоФокус</h1>
         <p class="subtitle">развивай экологическое мышление шаг за шагом</p>
       </div>
-      <div class="welcome-box-buttons">
-        <button class="login-button" @click="$emit('open-login')">вход</button>
-        <a href="#" class="guest-link" @click.prevent="$emit('continue-guest')">продолжить как гость</a>
-      </div>
+      
+      <button class="login-button" @click="$emit('open-login')">
+        <span class="login-text">вход</span>
+        <span class="login-arrow">→</span>
+      </button>
+      
+      <button class="guest-button" @click="$emit('continue-guest')">
+        <span class="guest-text">продолжить как гость</span>
+        <span class="guest-arrow">→</span>
+      </button>
     </div>
   </div>
 </template>
@@ -41,7 +47,7 @@ const animateInfo = () => {
     { 
       opacity: 1,
       y: 0,
-      duration: 1,
+      duration: 0.8,
       ease: 'power4.out',
     }
   );
@@ -54,10 +60,10 @@ const animateInfo = () => {
     { 
       opacity: 1,
       y: 0,
-      duration: 0.9,
+      duration: 0.7,
       ease: 'power4.out',
     },
-    '-=0.5'
+    '-=0.4'
   );
   tl.fromTo(
     '.login-button',
@@ -68,13 +74,13 @@ const animateInfo = () => {
     { 
       opacity: 1,
       y: 0,
-      duration: 0.8,
+      duration: 0.5,
       ease: 'power4.out',
     },
-    '-=0.4'
+    '-=0.3'
   );
   tl.fromTo(
-    '.guest-link',
+    '.guest-button',
     {
       opacity: 0,
       y: -40,
@@ -82,10 +88,10 @@ const animateInfo = () => {
     { 
       opacity: 1,
       y: 0,
-      duration: 0.7,
+      duration: 0.5,
       ease: 'power4.out',
     },
-    '-=0.3'
+    '-=0.2'
   );
 };
 
@@ -99,7 +105,7 @@ defineEmits(['open-login', 'continue-guest']);
 <style scoped>
 .page {
   min-height: 100vh;
-  background-image: linear-gradient(to bottom, #046A4D, #023522);
+  background-image: linear-gradient(to bottom, #046a4e, #014532);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -208,7 +214,7 @@ defineEmits(['open-login', 'continue-guest']);
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 50px;
+  gap: 20px;
   padding: 40px;
   text-align: center;
   user-select: none;
@@ -220,12 +226,7 @@ defineEmits(['open-login', 'continue-guest']);
   display: flex;
   flex-direction: column;
   gap: 10px;
-}
-
-.welcome-box-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  margin-bottom: 20px;
 }
 
 .title {
@@ -242,40 +243,131 @@ defineEmits(['open-login', 'continue-guest']);
   font-weight: 400;
 }
 
+/* Кнопка входа */
 .login-button {
-  width: 260px;
-  height: 80px;
-  font-size: 48px;
+  width: 300px;
+  height: 65px;
   border: none;
-  border-radius: 28px;
+  border-radius: 50px;
   cursor: pointer;
-  font-weight: 900;
-  background-color: #013b2b;
+  background: linear-gradient(135deg, #32b490 0%, #046a4e 100%);
   color: #fff;
-  transition: background-color 0.25s ease, box-shadow 0.25s ease;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  font-size: 35px;
+  font-weight: 900;
+  margin-top: 20px;
+}
+
+.login-text {
+  transition: transform 0.2s ease;
+}
+
+.login-arrow {
+  position: absolute;
+  font-size: 24px;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: all 0.2s ease;
+  right: 30px;
+}
+
+.login-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.4s ease;
+}
+
+.login-button:hover::before {
+  left: 100%;
 }
 
 .login-button:hover {
-  transform: translateY(-4px) scale(1.03);
-  background-color: #012216;
-  color: #D1D0D1;
-  box-shadow: 0 12px 24px rgba(0,0,0,0.25);
+  transform: translateY(-3px) scale(1.02);
+  background: linear-gradient(135deg, #55b49a 0%, #32b490 100%);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
 }
 
-.login-button:active {
-  transform: scale(0.97);
-  background-color: #05442694;
+.login-button:hover .login-text {
+  transform: translateX(-15px);
 }
 
-.guest-link {
+.login-button:hover .login-arrow {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Кнопка гостя */
+.guest-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.85);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 6px 0 12px 0;
+  font-size: 20px;
+  font-weight: 400;
+  width: auto;
+}
+
+.guest-text {
+  transition: transform 0.2s ease;
+}
+
+.guest-arrow {
+  position: absolute;
+  font-size: 22px;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: all 0.2s ease;
+  right: -30px;
+}
+
+.guest-button::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #32b490, #55b49a);
+  transition: all 0.2s ease;
+  transform: translateX(-50%);
+}
+
+.guest-button:hover {
   color: white;
-  text-decoration: none;
-  font-size: 24px;
-  font-weight: 200;
 }
 
-.guest-link:hover {
-  color: #D1D0D1;
+.guest-button:hover .guest-text {
+  transform: translateX(-10px);
+}
+
+.guest-button:hover .guest-arrow {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.guest-button:hover::before {
+  width: calc(100% + 20px);
+}
+
+.guest-button:active {
+  transform: scale(0.98);
 }
 
 /* Адаптивность */
@@ -289,18 +381,34 @@ defineEmits(['open-login', 'continue-guest']);
   }
   
   .login-button {
-    width: 200px;
-    height: 60px;
-    font-size: 32px;
+    width: 220px;
+    height: 55px;
+    font-size: 24px;
+    margin-top: 15px;
   }
   
-  .guest-link {
+  .login-arrow {
+    font-size: 20px;
+    right: 25px;
+  }
+  
+  .guest-button {
     font-size: 18px;
+    margin-top: 3px;
+  }
+  
+  .guest-arrow {
+    font-size: 18px;
+    right: -28px;
   }
   
   .welcome-box {
     min-height: auto;
     padding: 60px 20px;
+  }
+  
+  .welcome-box-text {
+    margin-bottom: 15px;
   }
   
   .leaf {
@@ -323,13 +431,24 @@ defineEmits(['open-login', 'continue-guest']);
   }
   
   .login-button {
-    width: 180px;
+    width: 200px;
     height: 50px;
-    font-size: 24px;
+    font-size: 22px;
+    margin-top: 10px;
   }
   
-  .guest-link {
+  .login-arrow {
+    font-size: 18px;
+    right: 20px;
+  }
+  
+  .guest-button {
     font-size: 16px;
+  }
+  
+  .guest-arrow {
+    font-size: 16px;
+    right: -25px;
   }
   
   .leaf {

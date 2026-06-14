@@ -87,7 +87,16 @@
         <div class="intro-divider"></div>
 
         <div class="intro-right">
-          <button class="level-card current-level" @click="$emit('open-level-one')">
+          <!-- Уровень 1 -->
+          <button 
+            class="level-card" 
+            :class="{ 
+              'current-level': isLevelUnlocked(1),
+              'locked-level': !isLevelUnlocked(1) 
+            }"
+            :disabled="!isLevelUnlocked(1)"
+            @click="openLevel(1)"
+          >
             <div class="level-text-block">
               <p class="level-title">уровень 1</p>
               <p class="level-xp">250 xp</p>
@@ -95,21 +104,39 @@
             <div class="level-arrow">→</div>
           </button>
 
-          <div class="level-card locked-level">
+          <!-- Уровень 2 -->
+          <button 
+            class="level-card" 
+            :class="{ 
+              'current-level': isLevelUnlocked(2),
+              'locked-level': !isLevelUnlocked(2) 
+            }"
+            :disabled="!isLevelUnlocked(2)"
+            @click="openLevel(2)"
+          >
             <div class="level-text-block">
               <p class="level-title">уровень 2</p>
               <p class="level-xp">250 xp</p>
             </div>
             <div class="level-arrow">→</div>
-          </div>
+          </button>
 
-          <div class="level-card locked-level">
+          <!-- Уровень 3 -->
+          <button 
+            class="level-card" 
+            :class="{ 
+              'current-level': isLevelUnlocked(3),
+              'locked-level': !isLevelUnlocked(3) 
+            }"
+            :disabled="!isLevelUnlocked(3)"
+            @click="openLevel(3)"
+          >
             <div class="level-text-block">
               <p class="level-title">уровень 3</p>
               <p class="level-xp">250 xp</p>
             </div>
             <div class="level-arrow">→</div>
-          </div>
+          </button>
         </div>
       </div>
 
@@ -136,6 +163,10 @@ const props = defineProps({
   userMode: {
     type: String,
     required: true
+  },
+  completedLevels: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -144,11 +175,24 @@ const emit = defineEmits([
   'open-in-development',
   'open-profile',
   'open-achievements',
-  'open-level-one',
+  'open-level',
   'go-home'
 ])
 
 const isMenuOpen = ref(false)
+
+// Проверка, разблокирован ли уровень
+const isLevelUnlocked = (levelNumber) => {
+  if (levelNumber === 1) return true
+  return props.completedLevels.includes(levelNumber - 1)
+}
+
+// Открытие уровня
+const openLevel = (levelNumber) => {
+  if (isLevelUnlocked(levelNumber)) {
+    emit('open-level', levelNumber)
+  }
+}
 
 const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value
@@ -651,6 +695,7 @@ onMounted(() => {
   filter: blur(2px);
   opacity: 0.85;
   pointer-events: none;
+  cursor: not-allowed;
 }
 
 .level-text-block {

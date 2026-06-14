@@ -51,21 +51,46 @@
 
   <OceanIntroView
     v-if="currentScreen === 'ocean-intro'"
-    @go-home="goHome"
-    @open-level-one="openLevelOne"
+    ref="oceanIntroViewRef"
     :user-mode="userMode"
+    :completed-levels="completedLevels"
+    @go-home="goHome"
+    @open-level="openLevel"
     @open-restricted="openRestrictedModal"
     @open-in-development="openInDevelopmentModal"
-    @open-first-location="openFirstLocation"
     @open-profile="openProfile"
     @open-achievements="openAchievements"
   />    
+
+  <!-- Уровни -->
+  <LevelOneView
+    v-if="currentScreen === 'level-1'"
+    :user-mode="userMode"
+    :level-id="1"
+    @complete="onLevelComplete"
+    @go-home="goHome"
+  />
+
+  <LevelTwoView
+    v-if="currentScreen === 'level-2'"
+    :user-mode="userMode"
+    :level-id="2"
+    @complete="onLevelComplete"
+    @go-home="goHome"
+  />
+
+  <LevelThreeView
+    v-if="currentScreen === 'level-3'"
+    :user-mode="userMode"
+    :level-id="3"
+    @complete="onLevelComplete"
+    @go-home="goHome"
+  />
 
   <LogOutModal 
     v-if="isLogOutOpen"
     @close="closeLogOutModal"
     @confirm-logout="confirmLogOut"
-  
   />
 
   <RankModal
@@ -93,13 +118,6 @@
     @close="closeDeactivateModal"
     @confirm-deactivate="confirmDeactivate"
   />
-
-  <LevelView
-  v-if="currentScreen === 'level-one'"
-  @complete="onLevelComplete"
-  @go-home="goHome"
-  />
-
 </template>
 
 <script setup>
@@ -117,16 +135,20 @@ import RankModal from './components/RankModal.vue'
 import AccountSettingsView from './views/AccountSettingsView.vue'
 import EditProfileView from './views/EditProfileView.vue'
 import DeactiveModal from './components/DeactiveModal.vue'
-import LevelView from './views/LevelView.vue'
-
+import LevelOneView from './views/LevelOneView.vue'
+import LevelTwoView from './views/LevelTwoView.vue'
+import LevelThreeView from './views/LevelThreeView.vue'
 
 const isRestrictedOpen = ref(false)
 const isInDevelopmentOpen = ref(false)
 
-const currentScreen = ref('welcome') //переменная для хранения текущего экрана приложения
-const userMode = ref('guest') //переменная, определяющая режим пользователя (guest - гость, authorized - авторизованный)
-const isAuthOpen = ref(false) // переменная, отвечающая за открытие и закрытие модального окна авторизации
-const authMode = ref('login') //переменная для хранения текущего режима авторизации(login - вход /register - регистрация)
+const currentScreen = ref('welcome')
+const userMode = ref('guest')
+const isAuthOpen = ref(false)
+const authMode = ref('login')
+
+// Прогресс уровней
+const completedLevels = ref([])
 
 const openAuthModal = (mode) => {
   authMode.value = mode
@@ -141,17 +163,15 @@ const switchAuthMode = (mode) => {
   authMode.value = mode
 }
 
-
-
 const enterGuestMode = () => {
-  userMode.value = 'guest' // переход в гостевой режим
-  currentScreen.value = 'home' // пользователь получает ограниченный доступ и перенаправляется на главный экран
+  userMode.value = 'guest'
+  currentScreen.value = 'home'
 }
 
 const enterAuthorizedMode = () => {
-  userMode.value = 'authorized' // Переход в режим авторизованного пользователя
-  isAuthOpen.value = false // После успешного входа модальное окно закрывается,
-  currentScreen.value = 'home' // пользователь перенаправляется на главный экран
+  userMode.value = 'authorized'
+  isAuthOpen.value = false
+  currentScreen.value = 'home'
 }
 
 const openRestrictedModal = () => {
@@ -170,11 +190,6 @@ const closeInDevelopmentModal = () => {
   isInDevelopmentOpen.value = false
 }
 
-const openAuthFromRestricted = () => {
-  isRestrictedOpen.value = false
-  openAuthModal('login')
-}
-
 const openLoginFromRestricted = () => {
   isRestrictedOpen.value = false
   openAuthModal('login')
@@ -187,10 +202,6 @@ const openRegisterFromRestricted = () => {
 
 const openFirstLocation = () => {
   currentScreen.value = 'ocean-intro'
-}
-
-const openLevelOne = () => {
-  currentScreen.value = 'level-one'
 }
 
 const openProfile = () => {
@@ -207,6 +218,33 @@ const goHome = () => {
 
 const openAchievements = () => {
   currentScreen.value = 'achievements'
+}
+
+// Открытие уровня
+const openLevel = (levelNumber) => {
+  currentScreen.value = `level-${levelNumber}`
+}
+
+// Завершение уровня
+const onLevelComplete = (completedLevelNumber) => {
+  // Добавляем уровень в пройденные, если его ещё нет
+  if (!completedLevels.value.includes(completedLevelNumber)) {
+    completedLevels.value.push(completedLevelNumber)
+  }
+  
+  // Показываем уведомление
+  if (completedLevelNumber < 3) {
+    setTimeout(() => {
+      alert(`🎉 Уровень ${completedLevelNumber} пройден! Открыт уровень ${completedLevelNumber + 1}! 🎉`)
+    }, 100)
+  } else {
+    setTimeout(() => {
+      alert('🏆 Поздравляю! Ты прошёл все уровни! 🏆')
+    }, 100)
+  }
+  
+  // Возвращаемся на карту уровней
+  currentScreen.value = 'ocean-intro'
 }
 
 const isLogOutOpen = ref(false)
@@ -258,5 +296,4 @@ const confirmDeactivate = () => {
   userMode.value = 'guest'
   currentScreen.value = 'welcome'
 }
-
 </script>

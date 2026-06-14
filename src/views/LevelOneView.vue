@@ -11,12 +11,12 @@
     <div class="level-header">
       <div class="level-badge">
         <span class="level-icon">🌊</span>
-        <span class="level-title">Уровень 2: Сортировка океана</span>
+        <span class="level-title">Уровень 1</span>
       </div>
       <div class="score-card">
         <span class="score-icon">⭐</span>
         <span class="score-text">{{ collectedCount }} / {{ totalTargets }}</span>
-        <span class="score-label">предметов спасено</span>
+        <span class="score-label"></span>
       </div>
     </div>
 
@@ -97,7 +97,7 @@
       💡 Перетащи предмет мышкой в нужную зону
     </div>
 
-    <div v-if="isComplete" class="completion-modal">
+    <div v-if="showCompleteModal" class="completion-modal">
       <div class="completion-content">
         <span class="completion-icon">🐬✨</span>
         <h2>Уровень пройден!</h2>
@@ -105,7 +105,7 @@
         <p class="reward-text">+250 XP</p>
         <div class="completion-buttons">
           <button class="next-level-btn" @click="goToNextLevel">Следующий уровень →</button>
-          <button class="home-btn" @click="$emit('go-home')">Вернуться домой</button>
+          <button class="home-btn" @click="goHome">Вернуться домой</button>
         </div>
       </div>
     </div>
@@ -114,7 +114,7 @@
 
 <script>
 export default {
-  name: 'LevelTwoView',
+  name: 'LevelOneView',
   props: {
     userMode: {
       type: String,
@@ -122,7 +122,8 @@ export default {
     },
     levelId: {
       type: Number,
-      default: 2
+      required: true,
+      default: 1
     }
   },
   data() {
@@ -189,7 +190,7 @@ export default {
   
   watch: {
     isComplete(val) {
-      if (val) {
+      if (val && !this.showCompleteModal) {
         this.completeLevel()
       }
     }
@@ -278,18 +279,24 @@ export default {
     completeLevel() {
       this.showCompleteModal = true
       
+      // Сохраняем прогресс в localStorage
       const completedLevels = JSON.parse(localStorage.getItem('completedLevels') || '[]')
-      if (!completedLevels.includes(2)) {
-        completedLevels.push(2)
+      if (!completedLevels.includes(this.levelId)) {
+        completedLevels.push(this.levelId)
         localStorage.setItem('completedLevels', JSON.stringify(completedLevels))
       }
       
+      // Начисляем XP
       const userXP = parseInt(localStorage.getItem('userXP') || '0')
       localStorage.setItem('userXP', userXP + 250)
     },
     
     goToNextLevel() {
-      this.$emit('complete')
+      this.$emit('complete', this.levelId)
+      this.$emit('go-home')
+    },
+    
+    goHome() {
       this.$emit('go-home')
     }
   }
@@ -297,6 +304,7 @@ export default {
 </script>
 
 <style scoped>
+/* Все стили остаются без изменений */
 @keyframes wave {
   0% { transform: translateX(0) translateZ(0) scaleY(1); }
   50% { transform: translateX(-25%) translateZ(0) scaleY(0.8); }

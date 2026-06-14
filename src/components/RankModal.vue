@@ -59,7 +59,7 @@
 
         <div class="next-rank-card">
           <div class="next-rank-left">
-            <p class="next-rank-name">легенда greenmind</p>
+            <p class="next-rank-name">легенда ЭкоФокуса</p>
             <p class="next-rank-range">2000+ xp</p>
           </div>
           <img :src="badgeImg4" alt="бейдж" class="next-rank-icon" />

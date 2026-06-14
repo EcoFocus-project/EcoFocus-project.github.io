@@ -75,8 +75,8 @@
     </div>
 
     <div class="action-block">
-      <button class="button-submit">
-        <span class="submit-text">продолжить</span>
+      <button class="button-submit" @click="$emit('success-login')">
+        <span class="submit-text" >продолжить</span>
         <span class="submit-icon">→</span>
       </button>
       <p class="to-login">уже есть аккаунт?

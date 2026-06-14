@@ -21,7 +21,13 @@
     </div>
 
     <div class="game-layout">
-      <div class="drop-zone aquarium" @dragover.prevent @drop="handleDrop($event, 'aquarium')">
+      <div 
+        class="drop-zone aquarium" 
+        :class="{ 'zone-active': isMobile && selectedItem && selectedItem.type === 'living' }"
+        @click="isMobile ? handleZoneClick('aquarium') : null"
+        @dragover.prevent
+        @drop="!isMobile ? handleDrop($event, 'aquarium') : null"
+      >
         <div class="zone-title">
           <span class="zone-icon">🐠</span>
           <h3>Аквариум (живые)</h3>
@@ -34,7 +40,13 @@
         </div>
       </div>
 
-      <div class="drop-zone trash-bin" @dragover.prevent @drop="handleDrop($event, 'trash')">
+      <div 
+        class="drop-zone trash-bin" 
+        :class="{ 'zone-active': isMobile && selectedItem && selectedItem.type === 'trash' }"
+        @click="isMobile ? handleZoneClick('trash') : null"
+        @dragover.prevent
+        @drop="!isMobile ? handleDrop($event, 'trash') : null"
+      >
         <div class="zone-title">
           <span class="zone-icon">🗑️</span>
           <h3>Корзина (мусор)</h3>
@@ -49,24 +61,40 @@
     </div>
 
     <div class="floating-items">
-      <h3 class="section-title">🌊 Плавающие объекты (нажми и удерживай)</h3>
+      <h3 class="section-title">
+        🌊 Плавающие объекты
+        <span class="mobile-hint" v-if="isMobile && selectedItem">✅ выбран: {{ selectedItem.name }}</span>
+        <span class="mobile-hint" v-else-if="isMobile">👇 нажми на предмет, затем на нужную зону</span>
+        <span class="desktop-hint" v-else>🖱️ перетащи предмет в нужную зону</span>
+      </h3>
       <div class="drag-items-container">
         <div
           v-for="item in dragItems"
           :key="item.id"
           class="drag-item"
-          :class="item.type === 'trash' ? 'item-trash' : 'item-living'"
+          :class="[
+            item.type === 'trash' ? 'item-trash' : 'item-living',
+            { 'item-selected': isMobile && selectedItem && selectedItem.id === item.id }
+          ]"
           draggable="true"
-          @dragstart="handleDragStart($event, item)"
-          @dragend="handleDragEnd"
-          @touchstart="handleTouchStart($event, item)"
-          @touchmove="handleTouchMove"
-          @touchend="handleTouchEnd"
+          @dragstart="!isMobile ? handleDragStart($event, item) : null"
+          @dragend="!isMobile ? handleDragEnd : null"
+          @click="isMobile ? selectItem(item) : null"
         >
           <span class="drag-emoji">{{ item.emoji }}</span>
           <span class="drag-name">{{ item.name }}</span>
         </div>
       </div>
+    </div>
+
+    <div class="tip-box" v-if="isMobile && selectedItem">
+      💡 Выбран: {{ selectedItem.name }}. Теперь нажми на нужную зону!
+    </div>
+    <div class="tip-box" v-else-if="isMobile">
+      💡 Нажми на предмет, а затем на зону (аквариум или корзина)
+    </div>
+    <div class="tip-box" v-else>
+      💡 Перетащи предмет мышкой в нужную зону
     </div>
 
     <div v-if="isComplete" class="completion-modal">
@@ -100,8 +128,8 @@ export default {
   data() {
     return {
       currentDragItem: null,
-      draggedElement: null,
-      touchTarget: null,
+      selectedItem: null,
+      isMobile: false,
       
       items: [
         { id: 1, name: 'Медуза аурелия', emoji: '🪼', type: 'living', zone: null },
@@ -150,6 +178,15 @@ export default {
     }
   },
   
+  mounted() {
+    this.checkMobile()
+    window.addEventListener('resize', this.checkMobile)
+  },
+  
+  beforeDestroy() {
+    window.removeEventListener('resize', this.checkMobile)
+  },
+  
   watch: {
     isComplete(val) {
       if (val) {
@@ -159,7 +196,11 @@ export default {
   },
   
   methods: {
-    // Десктопная версия
+    checkMobile() {
+      this.isMobile = window.innerWidth <= 768 || 'ontouchstart' in window
+    },
+    
+    // Десктоп: drag-and-drop
     handleDragStart(event, item) {
       this.currentDragItem = item
       event.dataTransfer.setData('text/plain', JSON.stringify(item))
@@ -177,79 +218,30 @@ export default {
       
       if (!this.currentDragItem) return
       
-      this.processDrop(this.currentDragItem, targetZone)
+      this.processPlacement(this.currentDragItem, targetZone)
       this.currentDragItem = null
     },
     
-    // Мобильная версия (touch)
-    handleTouchStart(event, item) {
-      event.preventDefault()
-      this.currentDragItem = item
-      this.touchTarget = event.target.closest('.drag-item')
-      if (this.touchTarget) {
-        this.touchTarget.classList.add('dragging')
-      }
-      
-      // Создаём клон для визуального отображения
-      const rect = this.touchTarget.getBoundingClientRect()
-      const touch = event.touches[0]
-      
-      // Запоминаем позицию для перемещения
-      this.touchStartX = touch.clientX - rect.left
-      this.touchStartY = touch.clientY - rect.top
-    },
-    
-    handleTouchMove(event) {
-      if (!this.currentDragItem || !this.touchTarget) return
-      event.preventDefault()
-      
-      const touch = event.touches[0]
-      this.touchTarget.style.position = 'fixed'
-      this.touchTarget.style.zIndex = '9999'
-      this.touchTarget.style.left = (touch.clientX - this.touchStartX) + 'px'
-      this.touchTarget.style.top = (touch.clientY - this.touchStartY) + 'px'
-      this.touchTarget.style.opacity = '0.8'
-    },
-    
-    handleTouchEnd(event) {
-      if (!this.currentDragItem) return
-      event.preventDefault()
-      
-      // Определяем, над какой зоной произошёл отпуск
-      const touch = event.changedTouches[0]
-      const elementUnderTouch = document.elementFromPoint(touch.clientX, touch.clientY)
-      const dropZone = elementUnderTouch?.closest('.drop-zone')
-      
-      let targetZone = null
-      if (dropZone) {
-        if (dropZone.classList.contains('aquarium')) {
-          targetZone = 'aquarium'
-        } else if (dropZone.classList.contains('trash-bin')) {
-          targetZone = 'trash'
-        }
-      }
-      
-      if (targetZone) {
-        this.processDrop(this.currentDragItem, targetZone)
+    // Мобилка: тап по предмету → тап по зоне
+    selectItem(item) {
+      if (this.selectedItem && this.selectedItem.id === item.id) {
+        this.selectedItem = null
       } else {
-        this.showFeedback(false)
+        this.selectedItem = item
       }
-      
-      // Возвращаем элемент в исходное состояние
-      if (this.touchTarget) {
-        this.touchTarget.style.position = ''
-        this.touchTarget.style.zIndex = ''
-        this.touchTarget.style.left = ''
-        this.touchTarget.style.top = ''
-        this.touchTarget.style.opacity = ''
-        this.touchTarget.classList.remove('dragging')
-      }
-      
-      this.currentDragItem = null
-      this.touchTarget = null
     },
     
-    processDrop(item, targetZone) {
+    handleZoneClick(zoneId) {
+      if (!this.selectedItem) {
+        this.showNoSelectionFeedback()
+        return
+      }
+      
+      this.processPlacement(this.selectedItem, zoneId)
+      this.selectedItem = null
+    },
+    
+    processPlacement(item, targetZone) {
       const expectedZone = this.correctPlacements[item.type]
       
       if (targetZone === expectedZone) {
@@ -257,24 +249,30 @@ export default {
         if (index !== -1) {
           this.items[index].zone = targetZone
         }
-        this.showFeedback(true, targetZone)
+        this.showCorrectFeedback(targetZone)
       } else {
-        this.showFeedback(false)
+        this.showWrongFeedback()
       }
     },
     
-    showFeedback(isCorrect, zone = null) {
-      if (isCorrect) {
-        const dropZone = document.querySelector(zone === 'aquarium' ? '.aquarium' : '.trash-bin')
-        if (dropZone) {
-          dropZone.classList.add('correct-flash')
-          setTimeout(() => dropZone.classList.remove('correct-flash'), 500)
-        }
-      } else {
-        const dragItems = document.querySelector('.drag-items-container')
-        dragItems.classList.add('wrong-shake')
-        setTimeout(() => dragItems.classList.remove('wrong-shake'), 500)
+    showNoSelectionFeedback() {
+      const container = document.querySelector('.drag-items-container')
+      container.classList.add('wrong-shake')
+      setTimeout(() => container.classList.remove('wrong-shake'), 500)
+    },
+    
+    showCorrectFeedback(zoneId) {
+      const dropZone = document.querySelector(zoneId === 'aquarium' ? '.aquarium' : '.trash-bin')
+      if (dropZone) {
+        dropZone.classList.add('correct-flash')
+        setTimeout(() => dropZone.classList.remove('correct-flash'), 500)
       }
+    },
+    
+    showWrongFeedback() {
+      const container = document.querySelector('.drag-items-container')
+      container.classList.add('wrong-shake')
+      setTimeout(() => container.classList.remove('wrong-shake'), 500)
     },
     
     completeLevel() {
@@ -468,6 +466,12 @@ export default {
   background: rgba(4, 33, 69, 0.8);
 }
 
+.zone-active {
+  border-color: #ffd700;
+  background: rgba(255, 215, 0, 0.1);
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+}
+
 .correct-flash {
   animation: correctFlash 0.5s ease;
 }
@@ -533,6 +537,15 @@ export default {
   text-align: center;
 }
 
+.mobile-hint, .desktop-hint {
+  display: inline-block;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  margin-left: 10px;
+}
+
 .drag-items-container {
   display: flex;
   flex-wrap: wrap;
@@ -569,6 +582,13 @@ export default {
   cursor: grabbing;
 }
 
+.item-selected {
+  background: rgba(50, 180, 144, 0.4);
+  border-color: #ffd700;
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+}
+
 .drag-emoji {
   font-size: 36px;
 }
@@ -597,6 +617,19 @@ export default {
 
 .wrong-shake {
   animation: wrongShake 0.5s ease;
+}
+
+.tip-box {
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 15px;
+  padding: 12px 20px;
+  margin-top: 20px;
+  color: #ffd700;
+  font-size: 14px;
+  text-align: center;
+  position: relative;
+  z-index: 2;
+  border-left: 3px solid #ffd700;
 }
 
 .completion-modal {
@@ -711,6 +744,7 @@ export default {
   
   .drop-zone {
     min-width: auto;
+    cursor: pointer;
   }
   
   .drag-name {
@@ -731,10 +765,39 @@ export default {
   
   .drag-item {
     padding: 10px 16px;
+    cursor: pointer;
   }
   
   .drag-item:active {
-    cursor: grabbing;
+    cursor: pointer;
+  }
+  
+  .mobile-hint {
+    display: inline-block;
+    margin-top: 0;
+    font-size: 12px;
+  }
+  
+  .desktop-hint {
+    display: none;
+  }
+  
+  .section-title {
+    font-size: 16px;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-hint {
+    display: none;
+  }
+  
+  .desktop-hint {
+    display: inline-block;
+  }
+  
+  .drop-zone {
+    cursor: grab;
   }
 }
 </style>

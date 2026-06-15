@@ -10,149 +10,102 @@
 
     <div class="level-header">
       <div class="level-badge">
-        <span class="level-icon">🔗</span>
-        <span class="level-title">Уровень 2: Пищевая цепочка</span>
+        <span class="level-icon">📋</span>
+        <span class="level-title">Уровень 2: Знаешь ли ты океан?</span>
       </div>
       <div class="score-card">
         <span class="score-icon">⭐</span>
-        <span class="score-text">{{ correctChains }} / {{ totalChains }}</span>
-        <span class="score-label">цепочек собрано</span>
+        <span class="score-text">{{ earnedXP }}</span>
+        <span class="score-label">заработано XP</span>
       </div>
-      <div class="mistake-card" v-if="mistakes > 0">
-        <span class="mistake-icon">❌</span>
-        <span class="mistake-text">{{ mistakes }}</span>
-        <span class="mistake-label">ошибок</span>
-      </div>
-    </div>
-
-    <div class="game-layout">
-      <!-- Колонка 1: ХИЩНИКИ -->
-      <div class="chain-column">
-        <div class="column-header">
-          <span class="column-icon">🦈</span>
-          <h3>ХИЩНИКИ</h3>
-        </div>
-        <div class="column-content">
-          <div 
-            v-for="slot in predatorSlots" 
-            :key="slot.id"
-            class="chain-slot"
-            :class="{ filled: slot.filled, correct: slot.correct, wrong: slot.wrong }"
-            @click="isMobile ? selectSlot(slot, 'predator') : null"
-            @dragover.prevent
-            @drop="handleDrop($event, slot, 'predator')"
-          >
-            <div v-if="slot.item" class="slot-item">
-              <span class="slot-emoji">{{ slot.item.emoji }}</span>
-              <span class="slot-name">{{ slot.item.name }}</span>
-            </div>
-            <div v-else class="empty-slot">⬅️ перетащи сюда</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="chain-arrow">→</div>
-
-      <!-- Колонка 2: ЖЕРТВЫ -->
-      <div class="chain-column">
-        <div class="column-header">
-          <span class="column-icon">🐟</span>
-          <h3>ЖЕРТВЫ</h3>
-        </div>
-        <div class="column-content">
-          <div 
-            v-for="slot in preySlots" 
-            :key="slot.id"
-            class="chain-slot"
-            :class="{ filled: slot.filled, correct: slot.correct, wrong: slot.wrong }"
-            @click="isMobile ? selectSlot(slot, 'prey') : null"
-            @dragover.prevent
-            @drop="handleDrop($event, slot, 'prey')"
-          >
-            <div v-if="slot.item" class="slot-item">
-              <span class="slot-emoji">{{ slot.item.emoji }}</span>
-              <span class="slot-name">{{ slot.item.name }}</span>
-            </div>
-            <div v-else class="empty-slot">⬅️ перетащи сюда</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="chain-arrow">→</div>
-
-      <!-- Колонка 3: ОТХОДЫ -->
-      <div class="chain-column">
-        <div class="column-header">
-          <span class="column-icon">♻️</span>
-          <h3>ОТХОДЫ</h3>
-        </div>
-        <div class="column-content">
-          <div 
-            v-for="slot in wasteSlots" 
-            :key="slot.id"
-            class="chain-slot"
-            :class="{ filled: slot.filled, correct: slot.correct, wrong: slot.wrong }"
-            @click="isMobile ? selectSlot(slot, 'waste') : null"
-            @dragover.prevent
-            @drop="handleDrop($event, slot, 'waste')"
-          >
-            <div v-if="slot.item" class="slot-item">
-              <span class="slot-emoji">{{ slot.item.emoji }}</span>
-              <span class="slot-name">{{ slot.item.name }}</span>
-            </div>
-            <div v-else class="empty-slot">⬅️ перетащи сюда</div>
-          </div>
-        </div>
+      <div class="correct-card">
+        <span class="correct-icon">✓</span>
+        <span class="correct-text">{{ correctAnswers }} / {{ totalQuestions }}</span>
+        <span class="correct-label">верных ответов</span>
       </div>
     </div>
 
-    <!-- Доступные элементы (рандомно перемешанные) -->
-    <div class="available-items">
-      <h3 class="section-title">📦 Доступные элементы</h3>
-      <div class="items-container">
-        <div
-          v-for="item in shuffledAvailableItems"
-          :key="item.id"
-          class="drag-item"
-          :class="{ 'item-selected': isMobile && selectedItem && selectedItem.id === item.id }"
-          draggable="true"
-          @dragstart="handleDragStart($event, item)"
-          @dragend="handleDragEnd"
-          @click="isMobile ? selectAvailableItem(item) : null"
+    <div class="quiz-container">
+      <div class="question-card" v-if="!isComplete">
+        <div class="question-header">
+          <span class="question-number">Вопрос {{ currentQuestionIndex + 1 }} из {{ totalQuestions }}</span>
+          <span class="question-points">+{{ questionXP }} XP за верный ответ</span>
+        </div>
+        
+        <div class="question-icon">{{ currentQuestion.icon }}</div>
+        <h3 class="question-text">{{ currentQuestion.text }}</h3>
+        
+        <div class="answers-list">
+          <button
+            v-for="(answer, idx) in currentQuestion.answers"
+            :key="idx"
+            class="answer-button"
+            :class="{ 
+              'answer-correct': answered && answer.correct,
+              'answer-wrong': answered && selectedAnswer === idx && !answer.correct,
+              'answer-disabled': answered
+            }"
+            :disabled="answered"
+            @click="checkAnswer(idx, answer.correct)"
+          >
+            <span class="answer-letter">{{ String.fromCharCode(65 + idx) }}.</span>
+            <span class="answer-text">{{ answer.text }}</span>
+            <span v-if="answered && answer.correct" class="answer-mark">✓</span>
+            <span v-if="answered && selectedAnswer === idx && !answer.correct" class="answer-mark">✗</span>
+          </button>
+        </div>
+        
+        <div class="feedback-message" v-if="answered">
+          <div class="feedback-icon">{{ isAnswerCorrect ? '🎉' : '💡' }}</div>
+          <div class="feedback-text">
+            <strong>{{ isAnswerCorrect ? 'Верно! +' + questionXP + ' XP' : 'К сожалению, неверно' }}</strong>
+            <p>{{ currentQuestion.explanation }}</p>
+          </div>
+        </div>
+        
+        <button 
+          v-if="answered" 
+          class="next-button"
+          @click="nextQuestion"
         >
-          <span class="drag-emoji">{{ item.emoji }}</span>
-          <span class="drag-name">{{ item.name }}</span>
+          {{ isLastQuestion ? 'Завершить' : 'Следующий вопрос →' }}
+        </button>
+      </div>
+
+      <div v-if="isComplete && !showCompleteModal" class="result-card">
+        <div class="result-icon">🏆</div>
+        <h2 class="result-title">Результат</h2>
+        <p class="result-score">Правильных ответов: {{ correctAnswers }} из {{ totalQuestions }}</p>
+        <p class="result-xp">Заработано XP: {{ earnedXP }} / {{ maxXP }}</p>
+        
+        <div class="result-feedback" v-if="correctAnswers === totalQuestions">
+          <p>🎉 Идеально! Ты настоящий знаток океана! +{{ maxXP }} XP 🎉</p>
+        </div>
+        <div class="result-feedback" v-else-if="correctAnswers >= totalQuestions - 2">
+          <p>🌊 Отлично! Ты хорошо знаешь океан! 🌊</p>
+        </div>
+        <div class="result-feedback" v-else>
+          <p>🐚 Неплохо, но есть куда расти. Почитай про океан и возвращайся! 🐚</p>
+        </div>
+        
+        <div class="completion-buttons">
+          <button class="next-level-btn" @click="completeLevel">Получить награду →</button>
+          <button class="home-btn" @click="goHome">Вернуться домой</button>
         </div>
       </div>
     </div>
 
-    <!-- Правильные цепочки для справки -->
-    <div class="reference-box">
-      <h4>📖 Правильные цепочки:</h4>
-      <div class="reference-chains">
-        <div v-for="chain in correctChainExamples" :key="chain.id" class="reference-chain">
-          <span>{{ chain.predator }} {{ chain.predatorEmoji }}</span>
-          <span>→</span>
-          <span>{{ chain.prey }} {{ chain.preyEmoji }}</span>
-          <span>→</span>
-          <span>{{ chain.waste }} {{ chain.wasteEmoji }}</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="tip-box" v-if="isMobile && selectedItem">
-      💡 Выбран: {{ selectedItem.name }}. Теперь нажми на пустую ячейку!
-    </div>
-    <div class="tip-box" v-else>
-      💡 Перетащи элементы в пустые ячейки, чтобы составить правильные пищевые цепочки!
+    <div class="ocean-fact">
+      <span class="fact-icon">🐟</span>
+      <span class="fact-text">Знаешь ли ты? Океаны производят более 50% кислорода на планете!</span>
     </div>
 
     <div v-if="showCompleteModal" class="completion-modal">
       <div class="completion-content">
         <span class="completion-icon">🐬✨</span>
         <h2>Уровень пройден!</h2>
-        <p>Ты восстановил пищевые цепочки в океане!</p>
-        <p class="reward-text">+250 XP</p>
+        <p>Ты узнал больше об океане и его обитателях!</p>
+        <p class="reward-text">+{{ earnedXP }} XP</p>
         <div class="completion-buttons">
           <button class="next-level-btn" @click="goToNextLevel">Следующий уровень →</button>
           <button class="home-btn" @click="goHome">Вернуться домой</button>
@@ -178,209 +131,114 @@ export default {
   },
   data() {
     return {
-      currentDragItem: null,
-      selectedItem: null,
-      isMobile: false,
-      mistakes: 0,
+      currentQuestionIndex: 0,
+      answered: false,
+      selectedAnswer: null,
+      isAnswerCorrect: false,
+      correctAnswers: 0,
+      earnedXP: 0,
+      questionXP: 50,
+      showCompleteModal: false,
       
-      // Правильные цепочки (тюлень заменён на более подходящую жертву)
-      chains: [
-        { id: 1, predator: 'Акула', predatorEmoji: '🦈', prey: 'Скат', preyEmoji: '🪰', waste: 'Кости', wasteEmoji: '🦴' },
-        { id: 2, predator: 'Косатка', predatorEmoji: '🐋', prey: 'Рыба', preyEmoji: '🐟', waste: 'Чешуя', wasteEmoji: '✨' },
-        { id: 3, predator: 'Мурена', predatorEmoji: '🐍', prey: 'Осьминог', preyEmoji: '🐙', waste: 'Щупальца', wasteEmoji: '🦑' }
-      ],
-      
-      predatorSlots: [
-        { id: 1, chainId: 1, type: 'predator', item: null, filled: false, correct: false, wrong: false },
-        { id: 2, chainId: 2, type: 'predator', item: null, filled: false, correct: false, wrong: false },
-        { id: 3, chainId: 3, type: 'predator', item: null, filled: false, correct: false, wrong: false }
-      ],
-      
-      preySlots: [
-        { id: 1, chainId: 1, type: 'prey', item: null, filled: false, correct: false, wrong: false },
-        { id: 2, chainId: 2, type: 'prey', item: null, filled: false, correct: false, wrong: false },
-        { id: 3, chainId: 3, type: 'prey', item: null, filled: false, correct: false, wrong: false }
-      ],
-      
-      wasteSlots: [
-        { id: 1, chainId: 1, type: 'waste', item: null, filled: false, correct: false, wrong: false },
-        { id: 2, chainId: 2, type: 'waste', item: null, filled: false, correct: false, wrong: false },
-        { id: 3, chainId: 3, type: 'waste', item: null, filled: false, correct: false, wrong: false }
-      ],
-      
-      baseAvailableItems: [
-        // Хищники
-        { id: 1, name: 'Акула', emoji: '🦈', type: 'predator', chainId: 1 },
-        { id: 2, name: 'Косатка', emoji: '🐋', type: 'predator', chainId: 2 },
-        { id: 3, name: 'Мурена', emoji: '🐍', type: 'predator', chainId: 3 },
-        // Жертвы
-        { id: 4, name: 'Скат', emoji: '🪰', type: 'prey', chainId: 1 },
-        { id: 5, name: 'Рыба', emoji: '🐟', type: 'prey', chainId: 2 },
-        { id: 6, name: 'Осьминог', emoji: '🐙', type: 'prey', chainId: 3 },
-        // Отходы
-        { id: 7, name: 'Кости', emoji: '🦴', type: 'waste', chainId: 1 },
-        { id: 8, name: 'Чешуя', emoji: '✨', type: 'waste', chainId: 2 },
-        { id: 9, name: 'Щупальца', emoji: '🦑', type: 'waste', chainId: 3 }
-      ],
-      
-      shuffledAvailableItems: [],
-      showCompleteModal: false
+      questions: [
+        {
+          icon: '🌊',
+          text: 'Сколько процентов поверхности Земли покрыто океанами?',
+          answers: [
+            { text: '~50%', correct: false },
+            { text: '~61%', correct: false },
+            { text: '~71%', correct: true },
+            { text: '~81%', correct: false }
+          ],
+          explanation: 'Океаны покрывают около 71% поверхности нашей планеты! Это больше, чем вся суша вместе взятая.'
+        },
+        {
+          icon: '🐋',
+          text: 'Какое животное является самым большим на Земле и живёт в океане?',
+          answers: [
+            { text: 'Синий кит', correct: true },
+            { text: 'Кашалот', correct: false },
+            { text: 'Косатка', correct: false },
+            { text: 'Гигантский кальмар', correct: false }
+          ],
+          explanation: 'Синий кит — крупнейшее животное на Земле. Его длина может достигать 30 метров, а вес — 150 тонн!'
+        },
+        {
+          icon: '🗑️',
+          text: 'Сколько лет разлагается пластиковая бутылка в океане?',
+          answers: [
+            { text: '50-100 лет', correct: false },
+            { text: '200-300 лет', correct: false },
+            { text: '450-500 лет', correct: true },
+            { text: '1000+ лет', correct: false }
+          ],
+          explanation: 'Пластиковая бутылка разлагается от 450 до 500 лет! Вот почему так важно перерабатывать пластик.'
+        },
+        {
+          icon: '🪸',
+          text: 'Что такое коралловые рифы?',
+          answers: [
+            { text: 'Подводные горы', correct: false },
+            { text: 'Колонии живых организмов', correct: true },
+            { text: 'Морские водоросли', correct: false },
+            { text: 'Подводные пещеры', correct: false }
+          ],
+          explanation: 'Коралловые рифы — это колонии крошечных животных — коралловых полипов. Это "морские джунгли", где живёт множество рыб!'
+        },
+        {
+          icon: '🐠',
+          text: 'Какой процент морских обитателей обитает именно на коралловых рифах?',
+          answers: [
+            { text: '~10%', correct: false },
+            { text: '~25%', correct: true },
+            { text: '~50%', correct: false },
+            { text: '~75%', correct: false }
+          ],
+          explanation: 'Хотя коралловые рифы занимают менее 1% океана, они являются домом для 25% всех морских обитателей!'
+        }
+      ]
     }
   },
   
   computed: {
-    correctChains() {
-      let count = 0
-      for (let i = 0; i < this.chains.length; i++) {
-        const predatorSlot = this.predatorSlots.find(s => s.chainId === i + 1)
-        const preySlot = this.preySlots.find(s => s.chainId === i + 1)
-        const wasteSlot = this.wasteSlots.find(s => s.chainId === i + 1)
-        if (predatorSlot?.correct && preySlot?.correct && wasteSlot?.correct) {
-          count++
-        }
-      }
-      return count
+    totalQuestions() {
+      return this.questions.length
     },
     
-    totalChains() {
-      return this.chains.length
+    maxXP() {
+      return this.totalQuestions * this.questionXP
+    },
+    
+    currentQuestion() {
+      return this.questions[this.currentQuestionIndex]
+    },
+    
+    isLastQuestion() {
+      return this.currentQuestionIndex === this.totalQuestions - 1
     },
     
     isComplete() {
-      return this.correctChains === this.totalChains && !this.showCompleteModal
-    },
-    
-    correctChainExamples() {
-      return this.chains
-    }
-  },
-  
-  mounted() {
-    this.checkMobile()
-    this.shuffleAvailableItems()
-    window.addEventListener('resize', this.checkMobile)
-  },
-  
-  beforeDestroy() {
-    window.removeEventListener('resize', this.checkMobile)
-  },
-  
-  watch: {
-    isComplete(val) {
-      if (val && !this.showCompleteModal) {
-        this.completeLevel()
-      }
+      return this.currentQuestionIndex >= this.totalQuestions
     }
   },
   
   methods: {
-    shuffleArray(array) {
-      const shuffled = [...array]
-      for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1))
-        ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
-      }
-      return shuffled
-    },
-    
-    shuffleAvailableItems() {
-      this.shuffledAvailableItems = this.shuffleArray(this.baseAvailableItems)
-    },
-    
-    checkMobile() {
-      this.isMobile = window.innerWidth <= 768 || 'ontouchstart' in window
-    },
-    
-    handleDragStart(event, item) {
-      this.currentDragItem = item
-      event.dataTransfer.setData('text/plain', JSON.stringify(item))
-      event.dataTransfer.effectAllowed = 'move'
-      event.target.classList.add('dragging')
-    },
-    
-    handleDragEnd(event) {
-      event.target.classList.remove('dragging')
-      this.currentDragItem = null
-    },
-    
-    handleDrop(event, slot, slotType) {
-      event.preventDefault()
-      if (!this.currentDragItem) return
-      this.processPlacement(this.currentDragItem, slot, slotType)
-      this.currentDragItem = null
-    },
-    
-    selectAvailableItem(item) {
-      if (this.selectedItem && this.selectedItem.id === item.id) {
-        this.selectedItem = null
-      } else {
-        this.selectedItem = item
-      }
-    },
-    
-    selectSlot(slot, slotType) {
-      if (!this.selectedItem) {
-        this.showNoSelectionFeedback()
-        return
-      }
-      this.processPlacement(this.selectedItem, slot, slotType)
-      this.selectedItem = null
-    },
-    
-    processPlacement(item, slot, slotType) {
-      if (item.type !== slotType) {
-        this.showWrongFeedback(slot)
-        return
-      }
+    checkAnswer(selectedIdx, isCorrect) {
+      this.answered = true
+      this.selectedAnswer = selectedIdx
+      this.isAnswerCorrect = isCorrect
       
-      if (item.chainId !== slot.chainId) {
-        this.showWrongFeedback(slot)
-        return
-      }
-      
-      if (slot.filled) {
-        this.showSlotOccupiedFeedback(slot)
-        return
-      }
-      
-      slot.item = { ...item }
-      slot.filled = true
-      slot.correct = true
-      this.showCorrectFeedback(slot)
-      
-      const itemIndex = this.shuffledAvailableItems.findIndex(i => i.id === item.id)
-      if (itemIndex !== -1) {
-        this.shuffledAvailableItems.splice(itemIndex, 1)
+      if (isCorrect) {
+        this.correctAnswers++
+        this.earnedXP += this.questionXP
       }
     },
     
-    showNoSelectionFeedback() {
-      const container = document.querySelector('.available-items')
-      container.classList.add('wrong-shake')
-      setTimeout(() => container.classList.remove('wrong-shake'), 500)
-    },
-    
-    showWrongFeedback(slot) {
-      slot.wrong = true
-      this.mistakes++
-      setTimeout(() => {
-        slot.wrong = false
-      }, 500)
-    },
-    
-    showSlotOccupiedFeedback(slot) {
-      slot.wrong = true
-      setTimeout(() => {
-        slot.wrong = false
-      }, 500)
-    },
-    
-    showCorrectFeedback(slot) {
-      const element = document.querySelector(`.chain-slot[data-id="${slot.id}"]`)
-      if (element) {
-        element.classList.add('correct-flash')
-        setTimeout(() => element.classList.remove('correct-flash'), 500)
-      }
+    nextQuestion() {
+      this.answered = false
+      this.selectedAnswer = null
+      this.isAnswerCorrect = false
+      this.currentQuestionIndex++
     },
     
     completeLevel() {
@@ -393,7 +251,7 @@ export default {
       }
       
       const userXP = parseInt(localStorage.getItem('userXP') || '0')
-      localStorage.setItem('userXP', userXP + 250)
+      localStorage.setItem('userXP', userXP + this.earnedXP)
     },
     
     goToNextLevel() {
@@ -415,20 +273,19 @@ export default {
   100% { transform: translateX(-50%) translateZ(0) scaleY(1); }
 }
 
-@keyframes correctFlash {
-  0%, 100% { border-color: rgba(50, 180, 144, 0.3); background: rgba(50, 180, 144, 0.1); }
-  50% { border-color: #4caf50; background: rgba(76, 175, 80, 0.3); box-shadow: 0 0 10px #4caf50; }
-}
-
-@keyframes wrongShake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  75% { transform: translateX(5px); }
-}
-
 @keyframes gentleFloat {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-6px); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(50px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 .ocean-level-container {
@@ -501,319 +358,279 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 30px;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 15px;
   position: relative;
   z-index: 2;
 }
 
-.level-badge, .score-card, .mistake-card {
+.level-badge, .score-card, .correct-card {
   background: rgba(27, 51, 79, 0.8);
   backdrop-filter: blur(10px);
-  padding: 8px 16px;
+  padding: 12px 20px;
   border-radius: 40px;
   border: 1px solid rgba(64, 224, 208, 0.3);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
-.level-icon, .score-icon, .mistake-icon {
-  font-size: 20px;
+.level-icon, .score-icon, .correct-icon {
+  font-size: 24px;
 }
 
-.level-title, .score-text, .mistake-text {
-  font-size: 14px;
+.level-title, .score-text, .correct-text {
+  font-size: 18px;
   font-weight: bold;
   color: white;
 }
 
-.score-text, .mistake-text {
+.score-text, .correct-text {
+  color: #ffd700;
+  font-size: 24px;
+}
+
+.score-label, .correct-label {
+  color: white;
+  font-size: 14px;
+}
+
+.correct-icon {
+  color: #4caf50;
+  font-size: 20px;
+}
+
+.quiz-container {
+  position: relative;
+  z-index: 2;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.question-card {
+  background: rgba(4, 33, 69, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 40px;
+  padding: 30px;
+  border: 1px solid rgba(64, 224, 208, 0.3);
+}
+
+.question-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.question-number {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+}
+
+.question-points {
+  color: #ffd700;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.question-icon {
+  font-size: 64px;
+  text-align: center;
+  margin-bottom: 15px;
+  animation: gentleFloat 3s ease-in-out infinite;
+}
+
+.question-text {
+  color: white;
+  font-size: 24px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 30px;
+  line-height: 1.3;
+}
+
+.answers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.answer-button {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px 20px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(64, 224, 208, 0.3);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.answer-button:hover:not(:disabled) {
+  background: rgba(64, 224, 208, 0.15);
+  border-color: #40e0d0;
+  transform: translateX(5px);
+}
+
+.answer-letter {
+  font-size: 20px;
+  font-weight: bold;
+  color: #40e0d0;
+  min-width: 35px;
+}
+
+.answer-text {
+  flex: 1;
+  color: white;
+  font-size: 16px;
+}
+
+.answer-mark {
+  font-size: 24px;
+  min-width: 30px;
+  text-align: center;
+}
+
+.answer-correct {
+  background: rgba(76, 175, 80, 0.2);
+  border-color: #4caf50;
+}
+
+.answer-wrong {
+  background: rgba(244, 67, 54, 0.2);
+  border-color: #f44336;
+}
+
+.answer-disabled {
+  cursor: default;
+  opacity: 0.9;
+}
+
+.feedback-message {
+  display: flex;
+  gap: 15px;
+  padding: 15px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 20px;
+  margin: 20px 0;
+}
+
+.feedback-icon {
+  font-size: 32px;
+}
+
+.feedback-text {
+  flex: 1;
+}
+
+.feedback-text strong {
   color: #ffd700;
   font-size: 18px;
 }
 
-.score-label, .mistake-label {
-  color: white;
-  font-size: 12px;
-}
-
-.game-layout {
-  display: flex;
-  align-items: stretch;
-  justify-content: center;
-  gap: 15px;
-  margin-bottom: 30px;
-  flex-wrap: wrap;
-}
-
-.chain-column {
-  flex: 1;
-  min-width: 180px;
-  background: rgba(4, 33, 69, 0.5);
-  backdrop-filter: blur(5px);
-  border-radius: 20px;
-  padding: 15px;
-  border: 1px solid rgba(64, 224, 208, 0.3);
-}
-
-.column-header {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  margin-bottom: 15px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(64, 224, 208, 0.3);
-}
-
-.column-header h3 {
-  color: white;
-  font-size: 16px;
-  margin: 0;
-}
-
-.column-icon {
-  font-size: 24px;
-}
-
-.chain-arrow {
-  font-size: 40px;
-  color: rgba(64, 224, 208, 0.6);
-  display: flex;
-  align-items: center;
-  padding: 0 5px;
-}
-
-.column-content {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.chain-slot {
-  min-height: 70px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 2px dashed rgba(64, 224, 208, 0.3);
-  border-radius: 15px;
-  transition: all 0.2s;
-  cursor: pointer;
-}
-
-.chain-slot:hover {
-  border-color: #40e0d0;
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.chain-slot.filled {
-  border: 2px solid rgba(76, 175, 80, 0.5);
-  background: rgba(76, 175, 80, 0.1);
-}
-
-.chain-slot.correct {
-  border-color: #4caf50;
-  background: rgba(76, 175, 80, 0.15);
-}
-
-.chain-slot.wrong {
-  border-color: #f44336;
-  background: rgba(244, 67, 54, 0.15);
-  animation: wrongShake 0.5s ease;
-}
-
-.slot-item {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 12px;
-}
-
-.slot-emoji {
-  font-size: 32px;
-}
-
-.slot-name {
+.feedback-text p {
   color: white;
   font-size: 14px;
-  font-weight: 500;
+  margin: 5px 0 0;
+  line-height: 1.4;
 }
 
-.empty-slot {
-  color: rgba(255, 255, 255, 0.4);
-  font-size: 12px;
-  text-align: center;
-  padding: 20px;
-}
-
-.available-items {
-  background: rgba(27, 51, 79, 0.8);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
+.next-button {
+  width: 100%;
   padding: 15px;
-  margin-bottom: 15px;
-}
-
-.section-title {
+  background: linear-gradient(135deg, #40e0d0, #008080);
   color: white;
-  font-size: 16px;
-  margin-bottom: 15px;
-  text-align: center;
-}
-
-.items-container {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 12px;
-}
-
-.drag-item {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 15px;
-  padding: 8px 16px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: grab;
-  transition: all 0.2s;
-  border: 1px solid rgba(64, 224, 208, 0.3);
-}
-
-.drag-item:active {
-  cursor: grabbing;
-}
-
-.drag-item:hover {
-  transform: translateY(-3px);
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.drag-emoji {
-  font-size: 28px;
-}
-
-.drag-name {
-  color: white;
-  font-size: 14px;
-}
-
-.item-selected {
-  background: rgba(50, 180, 144, 0.4);
-  border-color: #ffd700;
-  transform: scale(1.02);
-}
-
-.reference-box {
-  background: rgba(0, 0, 0, 0.4);
-  border-radius: 15px;
-  padding: 10px 15px;
-  margin-bottom: 15px;
-}
-
-.reference-box h4 {
-  color: #ffd700;
-  font-size: 12px;
-  margin: 0 0 8px 0;
-}
-
-.reference-chains {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 15px;
-  justify-content: center;
-}
-
-.reference-chain {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 12px;
-  color: white;
-  background: rgba(255, 255, 255, 0.1);
-  padding: 4px 8px;
-  border-radius: 20px;
-}
-
-.tip-box {
-  background: rgba(0, 0, 0, 0.5);
-  border-radius: 15px;
-  padding: 10px 15px;
-  color: #ffd700;
-  font-size: 12px;
-  text-align: center;
-}
-
-.wrong-shake {
-  animation: wrongShake 0.5s ease;
-}
-
-.correct-flash {
-  animation: correctFlash 0.5s ease;
-}
-
-.completion-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(10px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  animation: fadeIn 0.5s;
-}
-
-.completion-content {
-  background: linear-gradient(135deg, #1b5e8c, #0c376a);
-  padding: 30px;
+  border: none;
   border-radius: 30px;
-  text-align: center;
-  max-width: 400px;
-  border: 2px solid #40e0d0;
-  animation: slideUp 0.5s;
-}
-
-.completion-icon {
-  font-size: 56px;
-  animation: gentleFloat 2s infinite;
-}
-
-.completion-content h2 {
-  color: #ffd700;
-  font-size: 28px;
-  margin: 15px 0;
-}
-
-.completion-content p {
-  color: white;
-  font-size: 16px;
-  margin: 8px 0;
-}
-
-.reward-text {
-  font-size: 24px !important;
-  color: #ffd700 !important;
+  font-size: 18px;
   font-weight: bold;
-  margin: 15px 0 !important;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.next-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.result-card {
+  background: rgba(4, 33, 69, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 40px;
+  padding: 40px;
+  text-align: center;
+  border: 1px solid rgba(64, 224, 208, 0.3);
+}
+
+.result-icon {
+  font-size: 80px;
+  margin-bottom: 20px;
+}
+
+.result-title {
+  color: white;
+  font-size: 36px;
+  margin-bottom: 15px;
+}
+
+.result-score {
+  color: white;
+  font-size: 20px;
+  margin-bottom: 10px;
+}
+
+.result-xp {
+  color: #ffd700;
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
+.result-feedback p {
+  color: white;
+  font-size: 18px;
+  margin-bottom: 30px;
+}
+
+.ocean-fact {
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 20px;
+  padding: 12px 20px;
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  z-index: 2;
+}
+
+.fact-icon {
+  font-size: 28px;
+}
+
+.fact-text {
+  color: #ffd700;
+  font-size: 14px;
 }
 
 .completion-buttons {
   display: flex;
-  gap: 12px;
+  gap: 15px;
   justify-content: center;
-  margin-top: 15px;
+  margin-top: 20px;
   flex-wrap: wrap;
 }
 
 .next-level-btn, .home-btn {
-  padding: 10px 20px;
+  padding: 12px 25px;
   border-radius: 40px;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s;
@@ -836,50 +653,99 @@ export default {
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+.completion-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.5s;
 }
 
-@keyframes slideUp {
-  from { transform: translateY(50px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+.completion-content {
+  background: linear-gradient(135deg, #1b5e8c, #0c376a);
+  padding: 40px;
+  border-radius: 30px;
+  text-align: center;
+  max-width: 450px;
+  border: 2px solid #40e0d0;
+  animation: slideUp 0.5s;
+}
+
+.completion-icon {
+  font-size: 64px;
+  animation: gentleFloat 2s infinite;
+}
+
+.completion-content h2 {
+  color: #ffd700;
+  font-size: 32px;
+  margin: 20px 0;
+}
+
+.completion-content p {
+  color: white;
+  font-size: 18px;
+  margin: 10px 0;
+}
+
+.reward-text {
+  font-size: 28px !important;
+  color: #ffd700 !important;
+  font-weight: bold;
+  margin: 20px 0 !important;
 }
 
 @media (max-width: 768px) {
   .ocean-level-container {
-    padding: 70px 12px 12px 12px;
+    padding: 70px 15px 15px 15px;
   }
   
-  .game-layout {
+  .level-header {
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
   }
   
-  .chain-arrow {
-    transform: rotate(90deg);
-    padding: 5px 0;
+  .question-card {
+    padding: 20px;
   }
   
-  .chain-column {
-    width: 100%;
-    min-width: auto;
+  .question-text {
+    font-size: 18px;
   }
   
-  .slot-emoji {
-    font-size: 24px;
+  .answer-button {
+    padding: 12px 15px;
   }
   
-  .slot-name, .drag-name {
-    font-size: 12px;
+  .answer-text {
+    font-size: 14px;
   }
   
-  .drag-emoji {
-    font-size: 24px;
+  .level-title {
+    font-size: 14px;
   }
   
-  .reference-chain {
-    font-size: 10px;
+  .score-text, .correct-text {
+    font-size: 18px;
+  }
+  
+  .result-title {
+    font-size: 28px;
+  }
+  
+  .result-score, .result-xp {
+    font-size: 16px;
+  }
+  
+  .result-feedback p {
+    font-size: 16px;
   }
 }
 </style>

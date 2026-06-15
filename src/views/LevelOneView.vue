@@ -136,7 +136,7 @@ export default {
         { id: 1, name: 'Медуза аурелия', emoji: '🪼', type: 'living', zone: null },
         { id: 2, name: 'Медуза цианея', emoji: '🪼', type: 'living', zone: null },
         { id: 3, name: 'Рыбка-клоун', emoji: '🐠', type: 'living', zone: null },
-        { id: 4, name: 'Морской конёк', emoji: '🐴', type: 'living', zone: null },
+        { id: 4, name: 'Морской конёк', emoji: '🌊🐴', type: 'living', zone: null },
         { id: 5, name: 'Черепаха', emoji: '🐢', type: 'living', zone: null },
         { id: 6, name: 'Пластиковый пакет', emoji: '🛍️', type: 'trash', zone: null },
         { id: 7, name: 'Пластиковая бутылка', emoji: '🧴', type: 'trash', zone: null },
